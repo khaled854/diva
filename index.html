@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Love You ❤️</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #0d0010;
+            font-family: 'Amiri', serif;
+            width: 100vw;
+            height: 100vh;
+            cursor: none;
+        }
+
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        /* Custom cursor */
+        #cursor {
+            position: fixed;
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.08s ease;
+        }
+
+        #btn-container {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+            pointer-events: none;
+        }
+
+        #btn-container.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #message-box {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 100, 180, 0.25);
+            border-radius: 20px;
+            padding: 18px 36px;
+            color: #ffcce8;
+            font-size: 22px;
+            letter-spacing: 2px;
+            max-width: min(640px, 88vw);
+            width: max-content;
+            text-align: center;
+            display: none;
+            text-shadow: 0 0 18px rgba(255, 80, 180, 0.55);
+            line-height: 2;
+            font-family: 'Amiri', serif;
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-size: 19px;
+            letter-spacing: 1.5px;
+        }
+
+        #cursor-blink {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #ff80c0;
+            vertical-align: middle;
+            margin-right: 2px;
+            animation: blink 0.75s step-end infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0
+            }
+        }
+
+        #love-btn {
+            background: linear-gradient(135deg, #c2185b, #880e4f);
+            border: 1px solid rgba(255, 100, 180, 0.4);
+            border-radius: 60px;
+            padding: 18px 52px;
+            font-size: 22px;
+            color: #ffe0f0;
+            cursor: none;
+            box-shadow: 0 0 40px rgba(194, 24, 91, 0.4), 0 4px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+            letter-spacing: 2px;
+            font-weight: bold;
+            font-family: 'Amiri', serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #love-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 100, 180, 0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #love-btn:hover {
+            transform: scale(1.06) translateY(-2px);
+            box-shadow: 0 0 70px rgba(255, 20, 147, 0.6), 0 12px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        #love-btn:hover::before {
+            opacity: 1;
+        }
+
+        #love-btn:active {
+            transform: scale(0.97) translateY(1px);
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="c"></canvas>
+    <svg id="cursor" viewBox="0 0 24 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M12 21C12 21 1 13.5 1 6.5C1 3.42 3.42 1 6.5 1C8.24 1 9.8 1.8 11 3.08C11.5 3.63 11.77 3.97 12 4.26C12.23 3.97 12.5 3.63 13 3.08C14.2 1.8 15.76 1 17.5 1C20.58 1 23 3.42 23 6.5C23 13.5 12 21 12 21Z"
+            fill="rgba(255,50,120,0.85)" stroke="rgba(255,150,200,0.6)" stroke-width="0.8" />
+    </svg>
+
+    <div id="btn-container">
+        <div id="message-box"></div>
+        <button id="love-btn">💌 اضغط هنا</button>
+    </div>
+
+    <script>
+        // ---- Custom cursor ----
+        const cursorEl = document.getElementById('cursor');
+        let mouseX = -100, mouseY = -100;
+        document.addEventListener('mousemove', e => {
+            mouseX = e.clientX; mouseY = e.clientY;
+            cursorEl.style.left = mouseX + 'px';
+            cursorEl.style.top = mouseY + 'px';
+        });
+
+        // ---- Canvas setup ----
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        let W = canvas.width = window.innerWidth;
+        let H = canvas.height = window.innerHeight;
+        window.addEventListener('resize', () => {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            if (finished) assignTargets(sequence[seqIndex - 1], fontSize[seqIndex - 1], density[seqIndex - 1]);
+        });
+
+        // ---- Background ----
+        let bgT = 0;
+        function drawBackground() {
+            bgT += 0.004;
+            const cx = W / 2 + Math.cos(bgT) * W * 0.25;
+            const cy = H / 2 + Math.sin(bgT * 0.8) * H * 0.2;
+            const g1 = ctx.createRadialGradient(cx, cy, 0, W / 2, H / 2, Math.max(W, H) * 0.9);
+            g1.addColorStop(0, '#2d0040');
+            g1.addColorStop(0.45, '#15001f');
+            g1.addColorStop(1, '#080008');
+            ctx.fillStyle = g1;
+            ctx.fillRect(0, 0, W, H);
+
+            // subtle vignette
+            const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, Math.max(W, H) * 0.8);
+            vg.addColorStop(0, 'rgba(0,0,0,0)');
+            vg.addColorStop(1, 'rgba(0,0,0,0.6)');
+            ctx.fillStyle = vg;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // ---- Heart path (unit, centered at 0,0) ----
+        function heartPath(ctx, cx, cy, size) {
+            const s = size;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - s * 0.3);
+            ctx.bezierCurveTo(
+                cx + s * 0.5, cy - s * 1.0,
+                cx + s * 1.2, cy - s * 0.1,
+                cx, cy + s * 0.85
+            );
+            ctx.bezierCurveTo(
+                cx - s * 1.2, cy - s * 0.1,
+                cx - s * 0.5, cy - s * 1.0,
+                cx, cy - s * 0.3
+            );
+            ctx.closePath();
+        }
+
+        // ---- Text → pixel points ----
+        function getTextPoints(text, fsize, step) {
+            const OW = 900, OH = 400;
+            const off = document.createElement('canvas');
+            off.width = OW; off.height = OH;
+            const oc = off.getContext('2d');
+            oc.fillStyle = 'white';
+            oc.font = `bold ${fsize}px serif`;
+            oc.textAlign = 'center';
+            oc.textBaseline = 'middle';
+            oc.fillText(text, OW / 2, OH / 2);
+            const data = oc.getImageData(0, 0, OW, OH).data;
+            const pts = [];
+            for (let y = 0; y < OH; y += step) {
+                for (let x = 0; x < OW; x += step) {
+                    if (data[(y * OW + x) * 4 + 3] > 128) {
+                        pts.push({
+                            x: (x - OW / 2) + W / 2,
+                            y: (y - OH / 2) + H / 2
+                        });
+                    }
+                }
+            }
+            return pts;
+        }
+
+        // ---- Particle system ----
+        const N = 700;
+        const particles = [];
+
+        // Pre-baked color palettes per particle — warm deep pinks/crimsons/roses
+        const palettes = [
+            { h: 330, s: 90, l: 65 },
+            { h: 345, s: 85, l: 58 },
+            { h: 315, s: 75, l: 60 },
+            { h: 355, s: 80, l: 55 },
+            { h: 325, s: 95, l: 70 },
+            { h: 340, s: 70, l: 72 },
+        ];
+
+        for (let i = 0; i < N; i++) {
+            const col = palettes[i % palettes.length];
+            const hJitter = (Math.random() - 0.5) * 25;
+            const lJitter = (Math.random() - 0.5) * 15;
+            particles.push({
+                x: Math.random() * W,
+                y: Math.random() * H,
+                vx: 0, vy: 0,
+                ax: 0, ay: 0,
+                targetX: Math.random() * W,
+                targetY: Math.random() * H,
+                alpha: 0,
+                targetAlpha: 0,
+                size: 2.5 + Math.random() * 3.5,
+                hue: col.h + hJitter,
+                sat: col.s,
+                lit: col.l + lJitter,
+                // for organic wobble
+                phase: Math.random() * Math.PI * 2,
+                wobbleAmp: 0.15 + Math.random() * 0.3,
+                wobbleFreq: 0.008 + Math.random() * 0.012,
+                // trail
+                prevX: 0, prevY: 0,
+                // damping per particle (higher = more stable settling)
+                damping: 0.88 + Math.random() * 0.04,
+                stiffness: 0.07 + Math.random() * 0.02,
+                // state: 'free' | 'assembling' | 'assembled' | 'dispersing'
+                state: 'free',
+                // delay before particle starts moving (staggered assembly)
+                delay: 0,
+                delayTimer: 0,
+                // rotation of heart shape
+                rot: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.04,
+            });
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = (Math.random() * (i + 1)) | 0;
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        let assembling = false;
+
+        function assignTargets(text, fsize, step) {
+            const pts = getTextPoints(text, fsize, step);
+            if (!pts.length) return;
+            shuffle(pts);
+
+            // Sort particles by current distance to target (closest first for fluid look)
+            for (let i = 0; i < N; i++) {
+                const p = particles[i];
+                if (i < pts.length) {
+                    const pt = pts[i % pts.length];
+                    p.targetX = pt.x + (Math.random() - 0.5) * 3;
+                    p.targetY = pt.y + (Math.random() - 0.5) * 3;
+                    p.targetAlpha = 0.75 + Math.random() * 0.25;
+                } else {
+                    p.targetX = (Math.random() - 0.5) * W * 1.5 + W / 2;
+                    p.targetY = (Math.random() - 0.5) * H * 1.5 + H / 2;
+                    p.targetAlpha = 0;
+                }
+                // Staggered delay — particles closer to their target move first (wave effect)
+                const dist = Math.hypot(p.x - p.targetX, p.y - p.targetY);
+                p.delay = (dist / (Math.max(W, H) * 0.8)) * 40 + Math.random() * 15; // frames
+                p.delayTimer = p.delay;
+                p.state = 'assembling';
+            }
+        }
+
+        function disperseAll() {
+            const spread = 1.8;
+            for (let p of particles) {
+                // Explode outward from current position
+                const angle = Math.atan2(p.y - H / 2, p.x - W / 2) + (Math.random() - 0.5) * 1.2;
+                const dist = 0.4 * Math.max(W, H) + Math.random() * 0.5 * Math.max(W, H);
+                p.targetX = p.x + Math.cos(angle) * dist * (0.5 + Math.random());
+                p.targetY = p.y + Math.sin(angle) * dist * (0.5 + Math.random());
+                p.targetAlpha = 0;
+                // Give them an initial velocity burst for snappy feel
+                p.vx += Math.cos(angle) * (3 + Math.random() * 5);
+                p.vy += Math.sin(angle) * (3 + Math.random() * 5);
+                p.state = 'dispersing';
+                p.delayTimer = Math.random() * 8; // slight stagger on disperse too
+                p.delay = p.delayTimer;
+            }
+        }
+
+        // ---- Sequence ----
+        const sequence = ['3', '2', '1', 'I love you'];
+        const fontSize = [210, 210, 210, 105];
+        const density = [8, 8, 8, 5];
+        const assembleDur = 2200;
+        const pauseDur = 1400;
+        const disperseDur = 1100;
+
+        let seqIndex = 0;
+        let finished = false;
+
+        function runPhase() {
+            if (seqIndex >= sequence.length) {
+                finished = true;
+                document.getElementById('btn-container').classList.add('visible');
+                return;
+            }
+            assignTargets(sequence[seqIndex], fontSize[seqIndex], density[seqIndex]);
+
+            setTimeout(() => {
+                if (seqIndex === sequence.length - 1) {
+                    finished = true;
+                    document.getElementById('btn-container').classList.add('visible');
+                    return;
+                }
+                setTimeout(() => {
+                    disperseAll();
+                    setTimeout(() => {
+                        seqIndex++;
+                        runPhase();
+                    }, disperseDur);
+                }, pauseDur);
+            }, assembleDur);
+        }
+
+        setTimeout(runPhase, 500);
+
+        // ---- Draw a single heart ----
+        function drawParticleHeart(p) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
+
+            const s = p.size;
+
+            // glow
+            ctx.shadowColor = `hsl(${p.hue},${p.sat}%,${p.lit}%)`;
+            ctx.shadowBlur = s * 3.5;
+
+            ctx.fillStyle = `hsl(${p.hue},${p.sat}%,${p.lit}%)`;
+            heartPath(ctx, 0, 0, s);
+            ctx.fill();
+
+            // bright specular center
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha * 0.45));
+            ctx.fillStyle = `hsl(${p.hue},30%,95%)`;
+            heartPath(ctx, -s * 0.15, -s * 0.25, s * 0.28);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ---- Animation loop ----
+        let frame = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            frame++;
+
+            drawBackground();
+
+            for (let p of particles) {
+                // Handle delay
+                if (p.delayTimer > 0) {
+                    p.delayTimer--;
+                    // still draw but frozen
+                    if (p.alpha > 0.01) drawParticleHeart(p);
+                    continue;
+                }
+
+                // Organic wobble when assembled (very subtle)
+                let wobbleX = 0, wobbleY = 0;
+                if (p.state === 'assembled' || (p.state === 'assembling')) {
+                    p.phase += p.wobbleFreq;
+                    wobbleX = Math.sin(p.phase) * p.wobbleAmp;
+                    wobbleY = Math.cos(p.phase * 1.3) * p.wobbleAmp * 0.6;
+                }
+
+                // Spring physics toward target + wobble
+                const tx = p.targetX + wobbleX;
+                const ty = p.targetY + wobbleY;
+                p.ax = (tx - p.x) * p.stiffness;
+                p.ay = (ty - p.y) * p.stiffness;
+                p.vx = (p.vx + p.ax) * p.damping;
+                p.vy = (p.vy + p.ay) * p.damping;
+                p.prevX = p.x;
+                p.prevY = p.y;
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Alpha spring
+                p.alpha += (p.targetAlpha - p.alpha) * 0.08;
+
+                // Rotate hearts gently (slow down when assembled)
+                if (p.state === 'assembling' || p.state === 'dispersing') {
+                    p.rot += p.rotSpeed;
+                } else {
+                    p.rot += p.rotSpeed * 0.15;
+                }
+
+                // Check if close enough to target → switch to assembled
+                const dx = p.x - p.targetX, dy = p.y - p.targetY;
+                const speed = Math.hypot(p.vx, p.vy);
+                if (p.state === 'assembling' && Math.hypot(dx, dy) < 2 && speed < 0.5) {
+                    p.state = 'assembled';
+                }
+
+                if (p.alpha > 0.01) drawParticleHeart(p);
+            }
+
+            // Ambient floating hearts in background (always)
+            // (done via extra mini-particles in bg layer — subtle)
+            drawAmbientDust();
+        }
+
+        // ---- Ambient dust layer ----
+        const DUST = 80;
+        const dust = Array.from({ length: DUST }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: -(0.1 + Math.random() * 0.4),
+            size: 0.8 + Math.random() * 1.6,
+            alpha: 0.05 + Math.random() * 0.15,
+            hue: 310 + Math.random() * 60,
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.03,
+        }));
+
+        function drawAmbientDust() {
+            for (let d of dust) {
+                d.x += d.vx + Math.sin(frame * 0.008 + d.y * 0.01) * 0.2;
+                d.y += d.vy;
+                d.rot += d.rotSpeed;
+                if (d.y < -20) { d.y = H + 10; d.x = Math.random() * W; }
+                ctx.save();
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.rot);
+                ctx.globalAlpha = d.alpha;
+                ctx.shadowColor = `hsl(${d.hue},80%,70%)`;
+                ctx.shadowBlur = d.size * 4;
+                ctx.fillStyle = `hsl(${d.hue},80%,70%)`;
+                heartPath(ctx, 0, 0, d.size);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        animate();
+
+        // ---- Button ----
+        const btn = document.getElementById('love-btn');
+        const msgBox = document.getElementById('message-box');
+
+        // Full message as one continuous flow
+        const fullMessage =
+            `💖 هتكلم انهارده عن diva..
+
+بجد برفكت أوي 🌟
+شكلك عسول.. مزة.. بحبك 💕
+ملاك — ملامحك برفكت كده 👼
+حاجة برفكت وربنا يبختي 🌹
+أعرف حد في الجمال والحلاوة دي؟
+يبختي موت.. كمان حاجة برفكت كده ✨
+
+بحبك 💖`;
+
+        let msgInterval = null;
+        let typewriterDone = false;
+
+        btn.addEventListener('click', () => {
+            if (msgInterval) clearInterval(msgInterval);
+
+            msgBox.style.display = 'block';
+            msgBox.innerHTML = '';
+            typewriterDone = false;
+
+            // Add blinking cursor
+            const cursor = document.createElement('span');
+            cursor.id = 'cursor-blink';
+            msgBox.appendChild(cursor);
+
+            let i = 0;
+            const chars = [...fullMessage]; // unicode-safe split
+
+            msgInterval = setInterval(() => {
+                if (i < chars.length) {
+                    // Insert char before cursor
+                    const txt = document.createTextNode(chars[i]);
+                    msgBox.insertBefore(txt, cursor);
+                    i++;
+                } else {
+                    clearInterval(msgInterval);
+                    // Remove cursor blink after done
+                    setTimeout(() => cursor.remove(), 1800);
+                    typewriterDone = true;
+                }
+            }, 48);
+
+            // Gentle particle ripple on click
+            let burst = 0;
+            for (let p of particles) {
+                if (burst >= 25) break;
+                if (p.state === 'assembled') {
+                    const angle = Math.random() * Math.PI * 2;
+                    const force = 2.5 + Math.random() * 3;
+                    p.vx += Math.cos(angle) * force;
+                    p.vy += Math.sin(angle) * force - 1.5;
+                    burst++;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
